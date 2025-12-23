@@ -4,9 +4,8 @@ import "./App.css";
 import TaglineSection from "./TaglineSection";
 
 const api = axios.create({
-  baseURL: import.meta.env.APP_API_URL,
+  baseURL: import.meta.env._API_URL,
 });
-
 
 function App() {
   const [products, setProducts] = useState([]);
@@ -49,9 +48,11 @@ function App() {
     setLoading(true);
     try {
       const res = await api.get("/products/");
-      setProducts(res.data);
+      // defensive check: ensure we are setting an array
+      setProducts(Array.isArray(res.data) ? res.data : []);
       setError("");
     } catch (err) {
+      console.error(err); // Log error for debugging
       setError("Failed to fetch products");
     }
     setLoading(false);
@@ -63,9 +64,11 @@ function App() {
       setLoading(true);
       try {
         const res = await api.get("/products/");
-        setProducts(res.data);
+        // defensive check: ensure we are setting an array
+        setProducts(Array.isArray(res.data) ? res.data : []);
         setError("");
       } catch (err) {
+        console.error(err);
         setError("Failed to fetch products");
       }
       setLoading(false);
@@ -85,9 +88,14 @@ function App() {
 
   // Derived list with filter and sorting
   const filteredProducts = useMemo(() => {
+    // 1. SAFETY CHECK: If products is null/undefined/object, return empty array to prevent crash
+    if (!products || !Array.isArray(products)) {
+      return [];
+    }
+
     let filtered = products;
-    
-    // Apply filter
+
+    // 2. Apply filter
     const q = filter.trim().toLowerCase();
     if (q) {
       filtered = products.filter((p) =>
@@ -96,12 +104,14 @@ function App() {
         p.description?.toLowerCase().includes(q)
       );
     }
-    
-    // Apply sorting
-    return filtered.sort((a, b) => {
+
+    // 3. Apply sorting
+    // IMPORTANT: Use [...filtered] to create a COPY before sorting.
+    // .sort() mutates the array in place, which causes errors with React state.
+    return [...filtered].sort((a, b) => {
       let aVal = a[sortField];
       let bVal = b[sortField];
-      
+
       // Handle numeric fields
       if (sortField === "id" || sortField === "price" || sortField === "quantity") {
         aVal = Number(aVal);
@@ -111,7 +121,7 @@ function App() {
         aVal = String(aVal).toLowerCase();
         bVal = String(bVal).toLowerCase();
       }
-      
+
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
       if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
       return 0;
@@ -290,7 +300,7 @@ function App() {
             {message && <div className="success-msg">{message}</div>}
             {error && <div className="error-msg">{error}</div>}
           </div>
-          
+
           <TaglineSection />
 
           <div className="card list-card">
@@ -302,26 +312,26 @@ function App() {
                 <table className="product-table">
                   <thead>
                     <tr>
-                      <th 
+                      <th
                         className={`sortable ${sortField === 'id' ? `sort-${sortDirection}` : ''}`}
                         onClick={() => handleSort('id')}
                       >
                         ID
                       </th>
-                      <th 
+                      <th
                         className={`sortable ${sortField === 'name' ? `sort-${sortDirection}` : ''}`}
                         onClick={() => handleSort('name')}
                       >
                         Name
                       </th>
                       <th>Description</th>
-                      <th 
+                      <th
                         className={`sortable ${sortField === 'price' ? `sort-${sortDirection}` : ''}`}
                         onClick={() => handleSort('price')}
                       >
                         Price
                       </th>
-                      <th 
+                      <th
                         className={`sortable ${sortField === 'quantity' ? `sort-${sortDirection}` : ''}`}
                         onClick={() => handleSort('quantity')}
                       >
