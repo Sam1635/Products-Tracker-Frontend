@@ -4,7 +4,7 @@ import "./App.css";
 import TaglineSection from "./TaglineSection";
 
 const api = axios.create({
-  baseURL: import.meta.env._API_URL,
+  baseURL: import.meta.env.APP_API_URL,
 });
 
 function App() {
